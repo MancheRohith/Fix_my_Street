@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FixMyStreet - Report civic issues in your area">
+    <title>FixMyStreet — Civic Issue Reporter</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Critical inline CSS for speed */
+        :root {
+            --primary: #6366f1;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-dark: rgba(0, 0, 0, 0.2);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .page { display: none; min-height: 100vh; }
+        .page.active { display: block; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar glass-nav">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-tools"></i>
+                <span>FixMyStreet</span>
+            </div>
+            <div class="nav-links">
+                <a href="#" class="nav-link active" data-page="home">
+                    <i class="fas fa-home"></i> <span>Home</span>
+                </a>
+                <a href="#" class="nav-link" data-page="report">
+                    <i class="fas fa-plus-circle"></i> <span>Report</span>
+                </a>
+                <a href="#" class="nav-link" data-page="my-reports">
+                    <i class="fas fa-list"></i> <span>My Reports</span>
+                </a>
+                <a href="#" class="nav-link" data-page="map-view">
+                    <i class="fas fa-map"></i> <span>Map</span>
+                </a>
+                <a href="#" class="nav-link" data-page="about">
+                    <i class="fas fa-info-circle"></i> <span>About</span>
+                </a>
+            </div>
+            <div class="nav-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Home Page -->
+    <div class="page active" id="home-page">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="particles-bg" id="particles"></div>
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    <span class="typing-text" data-text="Make Your City Better"></span>
+                    <span class="cursor-blink">|</span>
+                </h1>
+                <p class="hero-subtitle">Report civic issues instantly. Track progress. Earn rewards.</p>
+                <div class="hero-stats">
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="stat-value" id="totalReports">0</div>
+                        <div class="stat-label">Issues Reported</div>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-value" id="resolvedReports">0</div>
+                        <div class="stat-label">Resolved</div>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon"><i class="fas fa-star"></i></div>
+                        <div class="stat-value" id="userPoints">0</div>
+                        <div class="stat-label">Your Points</div>
+                    </div>
+                </div>
+                <button class="btn-hero" onclick="navigateToPage('report')">
+                    <span>Report an Issue</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Featured Issues -->
+        <section class="featured-section">
+            <h2 class="section-title">Recent Reports</h2>
+            <div class="issues-grid" id="featuredIssues">
+                <!-- Dynamic content -->
+            </div>
+        </section>
+    </div>
+
+    <!-- Report Page -->
+    <div class="page" id="report-page">
+        <div class="container-report">
+            <div class="report-header">
+                <h1 class="page-title">Report New Issue</h1>
+                <div class="progress-steps">
+                    <div class="step active" data-step="1">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Details</div>
+                    </div>
+                    <div class="step" data-step="2">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Location</div>
+                    </div>
+                    <div class="step" data-step="3">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Confirm</div>
+                    </div>
+                </div>
+            </div>
+
+            <form class="report-form glass-card" id="reportForm">
+                <!-- Step 1: Issue Details -->
+                <div class="form-step active" data-step="1">
+                    <h3 class="step-title">What's the issue?</h3>
+                    
+                    <!-- Issue Type Selector -->
+                    <div class="field-group">
+                        <label class="field-label">Issue Type</label>
+                        <div class="issue-type-grid">
+                            <div class="issue-type-card" data-type="pothole">
+                                <div class="type-icon">🕳️</div>
+                                <div class="type-name">Pothole</div>
+                            </div>
+                            <div class="issue-type-card" data-type="garbage">
+                                <div class="type-icon">🗑️</div>
+                                <div class="type-name">Garbage</div>
+                            </div>
+                            <div class="issue-type-card" data-type="streetlight">
+                                <div class="type-icon">💡</div>
+                                <div class="type-name">Streetlight</div>
+                            </div>
+                            <div class="issue-type-card" data-type="wires">
+                                <div class="type-icon">🔌</div>
+                                <div class="type-name">Wires</div>
+                            </div>
+                            <div class="issue-type-card" data-type="water">
+                                <div class="type-icon">💧</div>
+                                <div class="type-name">Water</div>
+                            </div>
+                            <div class="issue-type-card" data-type="other">
+                                <div class="type-icon">🔧</div>
+                                <div class="type-name">Other</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="issueType" name="issueType" value="">
+                    </div>
+
+                    <!-- Photo Upload -->
+                    <div class="field-group">
+                        <label class="field-label">Photo</label>
+                        <div class="photo-upload-area" id="photoUploadArea">
+                            <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
+                            <div class="upload-placeholder">
+                                <i class="fas fa-camera"></i>
+                                <p>Drag & drop or click to upload</p>
+                                <p class="upload-hint">Or use camera</p>
+                            </div>
+                            <div class="photo-preview" id="photoPreview" style="display: none;">
+                                <img id="previewImage" src="" alt="Preview">
+                                <button type="button" class="remove-photo" id="removePhoto">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="field-group">
+                        <label class="field-label">Description</label>
+                        <textarea id="descInput" name="description" placeholder="Describe the issue in detail..." maxlength="300" rows="4"></textarea>
+                        <div class="char-counter">
+                            <span id="charCount">0</span>/300
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn-primary" onclick="nextStep()">
+                        Next: Location <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Step 2: Location -->
+                <div class="form-step" data-step="2">
+                    <h3 class="step-title">Where is it?</h3>
+                    
+                    <div class="location-controls">
+                        <button type="button" class="btn-gps" id="detectLocBtn">
+                            <i class="fas fa-crosshairs"></i>
+                            <span>Get GPS Location</span>
+                        </button>
+                        <div class="gps-status" id="gpsStatus">
+                            <div class="gps-meter">
+                                <div class="compass-icon" id="compassIcon">
+                                    <i class="fas fa-compass"></i>
+                                </div>
+                                <div class="accuracy-display" id="accuracyDisplay">--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="location-input-group">
+                        <label class="field-label">Or enter manually</label>
+                        <input type="text" id="manualLocation" placeholder="Enter address or coordinates">
+                    </div>
+
+                    <div class="location-status glass-card" id="locationStatus">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Click "Get GPS Location" or enter manually</span>
+                    </div>
+
+                    <div id="locationMap" class="location-map"></div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="prevStep()">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button type="button" class="btn-primary" onclick="nextStep()" id="confirmLocBtn" disabled>
+                            Next: Confirm <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Confirm -->
+                <div class="form-step" data-step="3">
+                    <h3 class="step-title">Review & Submit</h3>
+                    
+                    <div class="review-card glass-card">
+                        <div class="review-item">
+                            <label>Issue Type</label>
+                            <div class="review-value" id="reviewType">-</div>
+                        </div>
+                        <div class="review-item">
+                            <label>Description</label>
+                            <div class="review-value" id="reviewDesc">-</div>
+                        </div>
+                        <div class="review-item">
+                            <label>Location</label>
+                            <div class="review-value" id="reviewLoc">-</div>
+                        </div>
+                        <div class="review-item" id="reviewPhotoItem" style="display: none;">
+                            <label>Photo</label>
+                            <div class="review-value">
+                                <img id="reviewPhoto" src="" alt="Review" style="max-width: 200px; border-radius: 8px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="prevStep()">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button type="submit" class="btn-success" id="submitBtn">
+                            <i class="fas fa-paper-plane"></i> Send Report
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- My Reports Page -->
+    <div class="page" id="my-reports-page">
+        <div class="container-page">
+            <h1 class="page-title">My Reports</h1>
+            <div class="reports-header">
+                <div class="user-badge glass-card">
+                    <div class="badge-icon"><i class="fas fa-trophy"></i></div>
+                    <div class="badge-info">
+                        <div class="badge-title">Community Hero</div>
+                        <div class="badge-points" id="badgePoints">0 points</div>
+                    </div>
+                </div>
+                <div class="progress-circle-container">
+                    <svg class="progress-circle" viewBox="0 0 100 100">
+                        <circle class="progress-bg" cx="50" cy="50" r="45"></circle>
+                        <circle class="progress-bar" cx="50" cy="50" r="45" id="progressBar"></circle>
+                    </svg>
+                    <div class="progress-text" id="progressText">0%</div>
+                </div>
+            </div>
+            <div class="reports-list" id="reportsList">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Map View Page -->
+    <div class="page" id="map-view-page">
+        <div class="container-map">
+            <h1 class="page-title">All Issues Map</h1>
+            <div id="publicMap" class="full-map"></div>
+        </div>
+    </div>
+
+    <!-- About Page -->
+    <div class="page" id="about-page">
+        <div class="container-page">
+            <h1 class="page-title">About FixMyStreet</h1>
+            <div class="about-content glass-card">
+                <p>FixMyStreet is a civic engagement platform that empowers citizens to report and track local issues in their communities.</p>
+                <h3>How it works</h3>
+                <ol>
+                    <li>Report an issue with a photo and location</li>
+                    <li>Your report is sent to local authorities</li>
+                    <li>Track progress and earn points</li>
+                    <li>See all issues on the interactive map</li>
+                </ol>
+                <h3>Contact</h3>
+                <p>For support, email: <a href="mailto:support@fixmystreet.com">support@fixmystreet.com</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal" id="successModal">
+        <div class="modal-content glass-card">
+            <div class="confetti-container" id="confetti"></div>
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2>Report Submitted!</h2>
+            <p>Your issue has been sent to the authorities. You earned <span id="pointsEarned">10</span> points!</p>
+            <div class="modal-actions">
+                <button class="btn-primary" onclick="closeSuccessModal()">View My Reports</button>
+                <button class="btn-secondary" onclick="shareReport()">
+                    <i class="fas fa-share"></i> Share
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loader">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
